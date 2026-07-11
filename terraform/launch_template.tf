@@ -11,7 +11,7 @@ resource "aws_launch_template" "app" {
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
-  user_data = base64encode(<<-EOF
+ user_data = base64encode(<<-EOF
               #!/bin/bash
               set -e
               exec > >(tee /var/log/user-data.log)
@@ -21,15 +21,22 @@ resource "aws_launch_template" "app" {
               
               yum update -y
               yum install -y docker
+              yum install -y docker-compose
               
               systemctl start docker
               systemctl enable docker
               
-              echo "Docker installed and started"
+              # Add ec2-user to docker group
+              usermod -a -G docker ec2-user
+              
+              echo "Docker and Docker Compose installed"
               
               yum install -y amazon-ssm-agent
               systemctl start amazon-ssm-agent
               systemctl enable amazon-ssm-agent
+              
+              # Add ssm-user to docker group
+              usermod -a -G docker ssm-user
               
               echo "SSM agent installed and started"
               echo "User data script completed successfully"
