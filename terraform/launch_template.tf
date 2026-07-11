@@ -13,17 +13,28 @@ resource "aws_launch_template" "app" {
 
   user_data = base64encode(<<-EOF
               #!/bin/bash
+              set -e
+              exec > >(tee /var/log/user-data.log)
+              exec 2>&1
+              
+              echo "Starting user data script..."
+              
               yum update -y
               yum install -y docker
+              
               systemctl start docker
               systemctl enable docker
-
-              # Install SSM agent (usually pre-installed on Amazon Linux 2)
+              
+              echo "Docker installed and started"
+              
               yum install -y amazon-ssm-agent
               systemctl start amazon-ssm-agent
               systemctl enable amazon-ssm-agent
+              
+              echo "SSM agent installed and started"
+              echo "User data script completed successfully"
               EOF
-  )
+)
 
   tag_specifications {
     resource_type = "instance"
