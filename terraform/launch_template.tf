@@ -41,7 +41,7 @@ resource "aws_launch_template" "app" {
               echo "SSM agent installed and started"
               echo "User data script completed successfully"
               EOF
-)
+  )
 
   tag_specifications {
     resource_type = "instance"
@@ -49,6 +49,11 @@ resource "aws_launch_template" "app" {
       Name = "${var.project_name}-instance"
     }
   }
+
+  tags = {
+    Name = "${var.project_name}-lt"
+  }
+
 
   lifecycle {
     create_before_destroy = true
@@ -70,3 +75,4 @@ data "aws_ami" "amazon_linux_2" {
     values = ["available"]
   }
 }
+
