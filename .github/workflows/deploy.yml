@@ -6,7 +6,7 @@ on:
     paths:
       - 'app/**'
       - 'Dockerfile'
-  workflow_dispatch: # Added for manual triggers
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
@@ -51,8 +51,8 @@ jobs:
           
           NEW_VERSION=$((CURRENT_VERSION + 1))
           
-          # REMOVED quotes from 'USERDATA' so GitHub env variables expand properly
-          NEW_USER_DATA=$(base64 -w 0 <<USERDATA
+          # We use standard double quotes here so the environment variables expand perfectly before reaching AWS
+          NEW_USER_DATA=$(base64 -w 0 <<EOF
           #!/bin/bash
           set -e
           exec > >(tee /var/log/user-data.log)
@@ -68,13 +68,12 @@ jobs:
           systemctl start amazon-ssm-agent
           systemctl enable amazon-ssm-agent
           
-          # Using the explicitly evaluated environment variable here
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-          docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          aws ECR get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker stop hasa-app || true
           docker rm hasa-app || true
-          docker run -d --name hasa-app -p 80:5000 --restart always ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          USERDATA
+          docker run -d --name hasa-app -p 80:5000 --restart always $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          EOF
           )
           
           aws ec2 create-launch-template-version \
