@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'terraform/**' # ◄ Only runs if files inside the terraform folder change
+      - 'terraform/**'
 
 env:
-  AWS_REGION: us-east-1 # Change to your targeted AWS region
+  AWS_REGION: us-east-1
 
 jobs:
   terraform:
@@ -17,7 +17,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./terraform # Runs all commands inside the terraform folder
+        working-directory: ./terraform
 
     steps:
       - name: Checkout Repository Code
@@ -33,7 +33,11 @@ jobs:
       - name: Setup HashiCorp Terraform CLI
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.5.0" 
+          terraform_version: "1.5.0"
+
+      # ◄ THIS STEP IS ADDED TO DOWNLOAD THE AWS PROVIDERS
+      - name: Initialize Terraform Backend
+        run: terraform init
 
       - name: Check Code Formatting
         run: terraform fmt -check
@@ -44,6 +48,6 @@ jobs:
       - name: Generate Infrastructure Execution Plan
         id: plan
         run: terraform plan -no-color -out=tfplan
-    
+      
       - name: Execute Terraform Apply
         run: terraform apply -auto-approve tfplan
