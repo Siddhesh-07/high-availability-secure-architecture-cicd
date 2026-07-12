@@ -16,6 +16,14 @@ resource "aws_autoscaling_group" "app" {
     version = "$Latest"
   }
 
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50 # Keeps at least 1 instance alive while updating the other, ensuring zero downtime
+    }
+    triggers = ["tag"] # Re-triggers if the versions update
+  }
+
   tag {
     key                 = "Name"
     value               = "${var.project_name}-asg-instance"
