@@ -45,6 +45,5 @@ jobs:
         id: plan
         run: terraform plan -no-color -out=tfplan
     
-       Wilk-Apply the verified changes to AWS
       - name: Execute Terraform Apply
         run: terraform apply -auto-approve tfplan
