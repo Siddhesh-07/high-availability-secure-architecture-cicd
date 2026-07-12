@@ -1,0 +1,50 @@
+name: "Phase 1: Infrastructure Deployment"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**' # ◄ Only runs if files inside the terraform folder change
+
+env:
+  AWS_REGION: us-east-1 # Change to your targeted AWS region
+
+jobs:
+  terraform:
+    name: "Automate Terraform Lifecycle"
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./terraform # Runs all commands inside the terraform folder
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Administrative Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup HashiCorp Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.0" 
+
+      - name: Check Code Formatting
+        run: terraform fmt -check
+
+      - name: Validate Configuration Syntax
+        run: terraform validate
+
+      - name: Generate Infrastructure Execution Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+    
+       Wilk-Apply the verified changes to AWS
+      - name: Execute Terraform Apply
+        run: terraform apply -auto-approve tfplan
