@@ -1,7 +1,7 @@
 # ==================== LAUNCH TEMPLATE (Blueprint for EC2 instances) ====================
 
 resource "aws_launch_template" "app" {
-  name   = "${var.project_name}-lt"
+  name          = "${var.project_name}-lt"
   image_id      = data.aws_ami.amazon_linux_2.id
   instance_type = var.instance_type
 
@@ -54,7 +54,6 @@ resource "aws_launch_template" "app" {
     Name = "${var.project_name}-lt"
   }
 
-
   lifecycle {
     create_before_destroy = true
   }
@@ -75,4 +74,3 @@ data "aws_ami" "amazon_linux_2" {
     values = ["available"]
   }
 }
-
