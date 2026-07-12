@@ -22,7 +22,7 @@ resource "aws_iam_role" "ec2_role" {
   }
 }
 
-# Attach SSM policy (allows EC2 to receive commands from Systems Manager)
+# Attach SSM policy 
 resource "aws_iam_role_policy_attachment" "ssm_policy" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
