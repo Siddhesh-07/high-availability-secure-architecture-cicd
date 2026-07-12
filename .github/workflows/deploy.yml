@@ -11,7 +11,8 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: hasa-app-app
-  ASG_NAME: hasa-app-asg # ◄ Explicitly set here to completely avoid missing variable errors
+  ASG_NAME: hasa-app-asg 
+  LT_NAME: hasa-app-lt
 
 jobs:
   build-and-deploy:
