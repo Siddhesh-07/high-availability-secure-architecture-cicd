@@ -44,14 +44,9 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # Find the template dynamically by its tag name matching your Terraform setup
-          LT_NAME=$(aws ec2 describe-launch-templates \
-            --filters "Name=tag:Name,Values=hasa-app-launch-template" \
-            --query 'LaunchTemplates[0].LaunchTemplateName' \
-            --output text)
-          
+          # Safe, direct retrieval using the hardcoded environment variable block
           CURRENT_VERSION=$(aws ec2 describe-launch-template-versions \
-            --launch-template-name "$LT_NAME" \
+            --launch-template-name "${{ env.LT_NAME }}" \
             --query 'LaunchTemplateVersions[0].VersionNumber' \
             --output text)
           
@@ -84,7 +79,7 @@ jobs:
           )
           
           aws ec2 create-launch-template-version \
-            --launch-template-name "$LT_NAME" \
+            --launch-template-name "${{ env.LT_NAME }}" \
             --source-version "$CURRENT_VERSION" \
             --launch-template-data UserData="$NEW_USER_DATA"
 
