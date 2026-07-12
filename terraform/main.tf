@@ -15,7 +15,7 @@ provider "aws" {
 # ==================== VPC & NETWORKING ====================
 
 resource "aws_vpc" "main" {
-  cidr_block = var.vpc_cidr
+  cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -34,9 +34,9 @@ resource "aws_internet_gateway" "main" {
 
 # Public Subnet (for ALB) - AZ-a
 resource "aws_subnet" "public" {
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.public_subnet_cidr
-  availability_zone = "${var.aws_region}a"
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidr
+  availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
 
   tags = {
@@ -46,9 +46,9 @@ resource "aws_subnet" "public" {
 
 # Public Subnet (for ALB) - AZ-b 
 resource "aws_subnet" "public_2" {
-  vpc_id = aws_vpc.main.id
-  cidr_block = "10.0.4.0/24"
-  availability_zone = "${var.aws_region}b"
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.4.0/24"
+  availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
 
   tags = {
@@ -58,8 +58,8 @@ resource "aws_subnet" "public_2" {
 
 # Private Subnet 1 (for EC2)
 resource "aws_subnet" "private_1" {
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.private_subnet_cidr_1
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidr_1
   availability_zone = "${var.aws_region}a"
 
   tags = {
@@ -69,8 +69,8 @@ resource "aws_subnet" "private_1" {
 
 # Private Subnet 2 (for EC2 failover)
 resource "aws_subnet" "private_2" {
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.private_subnet_cidr_2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_subnet_cidr_2
   availability_zone = "${var.aws_region}b"
 
   tags = {
@@ -86,13 +86,13 @@ resource "aws_eip" "nat" {
     Name = "${var.project_name}-nat-eip"
   }
 
-  depends_on = [aws_internet_gateway.main] 
+  depends_on = [aws_internet_gateway.main]
 }
 
 # NAT Gateway (allows private subnets to reach internet)
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
-  subnet_id = aws_subnet.public.id
+  subnet_id     = aws_subnet.public.id
 
   tags = {
     Name = "${var.project_name}-nat"
@@ -116,12 +116,12 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id = aws_subnet.public.id
+  subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "public_2" {
-  subnet_id = aws_subnet.public_2.id
+  subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -130,7 +130,7 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.main.id
   }
 
@@ -140,19 +140,19 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private_1" {
-  subnet_id = aws_subnet.private_1.id
+  subnet_id      = aws_subnet.private_1.id
   route_table_id = aws_route_table.private.id
 }
 
 resource "aws_route_table_association" "private_2" {
-  subnet_id = aws_subnet.private_2.id
+  subnet_id      = aws_subnet.private_2.id
   route_table_id = aws_route_table.private.id
 }
 
 # ==================== ECR REPOSITORY ====================
 
 resource "aws_ecr_repository" "app" {
-  name = "${var.project_name}-app"
+  name                 = "${var.project_name}-app"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -193,9 +193,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
 }
 
 resource "aws_dynamodb_table" "terraform_locks" {
-  name = "${var.project_name}-terraform-locks"
+  name         = "${var.project_name}-terraform-locks"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key = "LockID"
+  hash_key     = "LockID"
 
   attribute {
     name = "LockID"

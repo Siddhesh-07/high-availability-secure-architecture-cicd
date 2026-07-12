@@ -1,11 +1,11 @@
 variable "aws_region" {
-  type        = string
-  default     = "us-east-1"
+  type    = string
+  default = "us-east-1"
 }
 
 variable "project_name" {
-  type        = string
-  default     = "hasa-app"
+  type    = string
+  default = "hasa-app"
 }
 
 variable "environment" {

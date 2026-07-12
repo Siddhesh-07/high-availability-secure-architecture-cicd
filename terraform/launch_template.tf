@@ -1,8 +1,8 @@
 # ==================== LAUNCH TEMPLATE (Blueprint for EC2 instances) ====================
 
 resource "aws_launch_template" "app" {
-  name_prefix = "${var.project_name}-lt-"
-  image_id = data.aws_ami.amazon_linux_2.id
+  name_prefix   = "${var.project_name}-lt-"
+  image_id      = data.aws_ami.amazon_linux_2.id
   instance_type = var.instance_type
 
   iam_instance_profile {
@@ -11,7 +11,7 @@ resource "aws_launch_template" "app" {
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
- user_data = base64encode(<<-EOF
+  user_data = base64encode(<<-EOF
               #!/bin/bash
               set -e
               exec > >(tee /var/log/user-data.log)
