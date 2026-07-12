@@ -1,0 +1,117 @@
+name: Application Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'Dockerfile'
+  workflow_dispatch: # Added for manual triggers
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: hasa-app-app
+  ASG_NAME: hasa-app-asg # ◄ Explicitly set here to completely avoid missing variable errors
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 
+
+      - uses: aws-actions/configure-aws-credentials@v4 
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2 
+
+      - name: Build & Push Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Update Launch Template with New Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Find the template dynamically by its tag name matching your Terraform setup
+          LT_NAME=$(aws ec2 describe-launch-templates \
+            --filters "Name=tag:Name,Values=hasa-app-launch-template" \
+            --query 'LaunchTemplates[0].LaunchTemplateName' \
+            --output text)
+          
+          CURRENT_VERSION=$(aws ec2 describe-launch-template-versions \
+            --launch-template-name "$LT_NAME" \
+            --query 'LaunchTemplateVersions[0].VersionNumber' \
+            --output text)
+          
+          NEW_VERSION=$((CURRENT_VERSION + 1))
+          
+          # Injecting the corrected dynamic UserData script
+          NEW_USER_DATA=$(base64 -w 0 <<'USERDATA'
+          #!/bin/bash
+          set -e
+          exec > >(tee /var/log/user-data.log)
+          exec 2>&1
+          
+          yum update -y
+          yum install -y docker
+          systemctl start docker
+          systemctl enable docker
+          usermod -a -G docker ec2-user
+          
+          yum install -y amazon-ssm-agent
+          systemctl start amazon-ssm-agent
+          systemctl enable amazon-ssm-agent
+          
+          # Pull and run latest Docker image mapping container port 5000 to public port 80
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+          docker pull $ECR_REGISTRY/hasa-app-app:latest
+          docker stop hasa-app || true
+          docker rm hasa-app || true
+          docker run -d --name hasa-app -p 80:5000 --restart always $ECR_REGISTRY/hasa-app-app:latest
+          USERDATA
+          )
+          
+          aws ec2 create-launch-template-version \
+            --launch-template-name "$LT_NAME" \
+            --source-version "$CURRENT_VERSION" \
+            --launch-template-data UserData="$NEW_USER_DATA"
+
+      - name: Trigger Instance Refresh (Zero-Downtime Rolling Update)
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ env.ASG_NAME }}" \
+            --strategy Rolling \
+            --preferences MinHealthyPercentage=50,InstanceWarmupPeriod=300
+
+      - name: Monitor Instance Refresh
+        run: |
+          for i in {1..120}; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ env.ASG_NAME }}" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            
+            echo "Instance Refresh Status: $STATUS"
+            
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Deployment complete! All instances updated."
+              exit 0
+            elif [ "$STATUS" == "Failed" ] || [ "$STATUS" == "Cancelled" ]; then
+              echo "Instance Refresh failed"
+              exit 1
+            fi
+            
+            sleep 15
+          done
+          echo "Refresh taking longer than expected, but still in progress"
