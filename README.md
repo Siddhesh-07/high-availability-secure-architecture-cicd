@@ -48,7 +48,7 @@ This architecture mirrors how Netflix, Uber, and Stripe deploy code. A single `g
         │                  │
    ┌────▼──────────────────▼──────────┐  ┌────────────────────────┐
    │   Private Subnet (2a)            │  │   Private Subnet (2b)  │
-   │   10.0.2.0/24 (us-east-1a)       │  │   10.0.3.0/24 (1b)    │
+   │   10.0.2.0/24 (us-east-1a)       │  │   10.0.3.0/24 (1b)     │
    ├──────────────────────────────────┤  ├────────────────────────┤
    │ ┌────────────────────────────┐   │  │ ┌──────────────────┐   │
    │ │   EC2 Instance (t3.micro)  │   │  │ │  EC2 Instance    │   │
@@ -58,7 +58,7 @@ This architecture mirrors how Netflix, Uber, and Stripe deploy code. A single `g
    │ │   - SSM Agent for updates  │   │  │ │  - SSM Agent ✅  │   │
    │ └────────────────────────────┘   │  │ └──────────────────┘   │
    │                                  │  │                        │
-   │   Health Check: ✅ HEALTHY       │  │   Health Check: ✅ OK  │
+   │   Health Check: ✅ HEALTHY       │  │   Health Check: ✅ OK │
    └──────────────────────────────────┘  └────────────────────────┘
         │                                            │
         └──────────────────┬─────────────────────────┘
@@ -79,7 +79,7 @@ Separate Control Layer (Not on Public Internet):
 ┌──────────────────────────────────────────────────────────┐
 │              GitHub Actions CI/CD Pipeline               │
 ├──────────────────────────────────────────────────────────┤
-│  1. Code Push → 2. Build Docker → 3. Push to ECR        │
+│  1. Code Push → 2. Build Docker → 3. Push to ECR         │
 │  4. Update Launch Template → 5. Trigger Instance Refresh │
 │  6. Monitor Rolling Update (Zero Downtime) ✅            │
 └──────────────────────────────────────────────────────────┘
@@ -126,28 +126,28 @@ HASA uses **two independent, specialized GitHub Actions workflows** that work in
     │       infra.yml              │ │       deploy.yml            │
     │                              │ │                             │
     │ Trigger: terraform/** files  │ │ Trigger: app/** OR          │
-    │          changed             │ │          Dockerfile        │
+    │          changed             │ │          Dockerfile         │
     │                              │ │                             │
     │ Steps:                       │ │ Steps:                      │
-    │ 1. Checkout code            │ │ 1. Checkout code           │
-    │ 2. Setup Terraform          │ │ 2. AWS Credentials         │
-    │ 3. Initialize backend (S3)  │ │ 3. Login to ECR            │
-    │ 4. Format check             │ │ 4. Build Docker image      │
-    │ 5. Validate syntax          │ │ 5. Push to ECR             │
-    │ 6. Plan changes             │ │ 6. Update Launch Template  │
-    │ 7. Apply to AWS             │ │ 7. Trigger ASG refresh     │
-    │                              │ │ 8. Monitor deployment      │
-    │ What Gets Updated:          │ │                             │
-    │ ✓ VPC & Subnets            │ │ What Gets Updated:          │
-    │ ✓ ALB & Target Groups      │ │ ✓ Docker image             │
-    │ ✓ ASG & Launch Template    │ │ ✓ Launch Template version  │
-    │ ✓ Security Groups          │ │ ✓ Running containers       │
-    │ ✓ IAM Roles & Policies     │ │                             │
-    │ ✓ ECR Repository           │ │ Result: Application code    │
-    │ ✓ S3 & DynamoDB            │ │ deployed across all EC2s    │
-    │                              │ │ ZERO DOWNTIME: ✅           │
-    │ Duration: ~2-3 minutes      │ │ Duration: ~10-15 minutes   │
-    │ Frequency: Rare (only       │ │ Frequency: Every code push │
+    │ 1. Checkout code            │ │ 1. Checkout code             │
+    │ 2. Setup Terraform          │ │ 2. AWS Credentials           │
+    │ 3. Initialize backend (S3)  │ │ 3. Login to ECR              │
+    │ 4. Format check             │ │ 4. Build Docker image        │
+    │ 5. Validate syntax          │ │ 5. Push to ECR               │
+    │ 6. Plan changes             │ │ 6. Update Launch Template    │
+    │ 7. Apply to AWS             │ │ 7. Trigger ASG refresh       │
+    │                              │ │ 8. Monitor deployment       │
+    │ What Gets Updated:          │ │                              │
+    │ ✓ VPC & Subnets            │ │ What Gets Updated:            │
+    │ ✓ ALB & Target Groups      │ │ ✓ Docker image               │
+    │ ✓ ASG & Launch Template    │ │ ✓ Launch Template version    │
+    │ ✓ Security Groups          │ │ ✓ Running containers         │
+    │ ✓ IAM Roles & Policies     │ │                              │
+    │ ✓ ECR Repository           │ │ Result: Application code     │
+    │ ✓ S3 & DynamoDB            │ │ deployed across all EC2s     │
+    │                              │ │ ZERO DOWNTIME: ✅          │
+    │ Duration: ~2-3 minutes      │ │ Duration: ~10-15 minutes    │
+    │ Frequency: Rare (only       │ │ Frequency: Every code push  │
     │ when infra needs changing)  │ │                             │
     └────────────┬────────────────┘ └──────────┬──────────────────┘
                  │                             │
@@ -176,7 +176,7 @@ HASA uses **two independent, specialized GitHub Actions workflows** that work in
             ┌──────────────▼──────────────┐
             │ AWS Fully Updated + App     │
             │ Running Latest Code Version │
-            │ Zero Service Interruption ✅ │
+            │ Zero Service Interruption ✅│
             └─────────────────────────────┘
 ```
 
